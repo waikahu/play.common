@@ -16,7 +16,7 @@ namespace Play.Common.HealthChecks
         private const string ReadyTagName = "ready";
         private const string LiveTagName = "live";
         private const string HealthEndpoint = "health";
-        private const int DefaultSeconds = 3;
+        private const int DefaultSeconds = 5;
 
         public static IHealthChecksBuilder AddMongoDb(
             this IHealthChecksBuilder builder,
