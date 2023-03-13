@@ -12,17 +12,20 @@ namespace Play.Common.Identity
         private const string AccessTokenParameter = "access_token";
         private const string MessageHubPath = "/messageHub";
 
-        private readonly IConfiguration _config;
-        public ConfigureJwtBearerOptions(IConfiguration config)
+        private readonly IConfiguration configuration;
+
+        public ConfigureJwtBearerOptions(IConfiguration configuration)
         {
-            _config = config;
+            this.configuration = configuration;
         }
 
         public void Configure(string name, JwtBearerOptions options)
         {
             if (name == JwtBearerDefaults.AuthenticationScheme)
             {
-                var serviceSettings = _config.GetSection(nameof(ServiceSettings)).Get<ServiceSettings>();
+                var serviceSettings = configuration.GetSection(nameof(ServiceSettings))
+                                                   .Get<ServiceSettings>();
+
                 options.Authority = serviceSettings.Authority;
                 options.Audience = serviceSettings.ServiceName;
                 options.MapInboundClaims = false;

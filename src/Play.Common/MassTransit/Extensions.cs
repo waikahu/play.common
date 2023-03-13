@@ -1,10 +1,6 @@
 using System;
 using System.Reflection;
-using GreenPipes;
-using GreenPipes.Configurators;
 using MassTransit;
-using MassTransit.Definition;
-using MassTransit.ExtensionsDependencyInjectionIntegration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Play.Common.Settings;
@@ -18,22 +14,22 @@ namespace Play.Common.MassTransit
 
         public static IServiceCollection AddMassTransitWithMessageBroker(
             this IServiceCollection services,
-            IConfiguration configuration,
+            IConfiguration config,
             Action<IRetryConfigurator> configureRetries = null)
         {
-            var serviceSettings = configuration.GetSection(nameof(ServiceSettings)).Get<ServiceSettings>();
+            var serviceSettings = config.GetSection(nameof(ServiceSettings)).Get<ServiceSettings>();
 
             switch (serviceSettings.MessageBroker?.ToUpper())
             {
                 case ServiceBus:
                     services.AddMassTransitWithServiceBus(configureRetries);
                     break;
-
                 case RabbitMq:
                 default:
                     services.AddMassTransitWithRabbitMq(configureRetries);
-                    break;
+                    break;                
             }
+
             return services;
         }
 
@@ -46,8 +42,6 @@ namespace Play.Common.MassTransit
                 configure.AddConsumers(Assembly.GetEntryAssembly());
                 configure.UsingPlayEconomyRabbitMq(configureRetries);
             });
-
-            services.AddMassTransitHostedService();
 
             return services;
         }
@@ -62,33 +56,30 @@ namespace Play.Common.MassTransit
                 configure.UsingPlayEconomyAzureServiceBus(configureRetries);
             });
 
-            services.AddMassTransitHostedService();
-
             return services;
-        }
+        }        
 
         public static void UsingPlayEconomyMessageBroker(
-            this IServiceCollectionBusConfigurator configure,
-            IConfiguration configuration,
+            this IBusRegistrationConfigurator configure,
+            IConfiguration config,
             Action<IRetryConfigurator> configureRetries = null)
         {
-            var serviceSettings = configuration.GetSection(nameof(ServiceSettings)).Get<ServiceSettings>();
+            var serviceSettings = config.GetSection(nameof(ServiceSettings)).Get<ServiceSettings>();
 
             switch (serviceSettings.MessageBroker?.ToUpper())
             {
                 case ServiceBus:
                     configure.UsingPlayEconomyAzureServiceBus(configureRetries);
                     break;
-
                 case RabbitMq:
                 default:
                     configure.UsingPlayEconomyRabbitMq(configureRetries);
-                    break;
+                    break;                
             }
         }
 
         public static void UsingPlayEconomyRabbitMq(
-            this IServiceCollectionBusConfigurator configure,
+            this IBusRegistrationConfigurator configure,
             Action<IRetryConfigurator> configureRetries = null)
         {
             configure.UsingRabbitMq((context, configurator) =>
@@ -105,11 +96,12 @@ namespace Play.Common.MassTransit
                 }
 
                 configurator.UseMessageRetry(configureRetries);
+                configurator.UseInstrumentation(serviceName: serviceSettings.ServiceName);
             });
         }
 
         public static void UsingPlayEconomyAzureServiceBus(
-            this IServiceCollectionBusConfigurator configure,
+            this IBusRegistrationConfigurator configure,
             Action<IRetryConfigurator> configureRetries = null)
         {
             configure.UsingAzureServiceBus((context, configurator) =>
@@ -126,7 +118,8 @@ namespace Play.Common.MassTransit
                 }
 
                 configurator.UseMessageRetry(configureRetries);
+                configurator.UseInstrumentation(serviceName: serviceSettings.ServiceName);
             });
-        }
+        }        
     }
 }
